@@ -1,8 +1,8 @@
-Hydrates
+# Hydrates
 
 Aplicação para acompanhamento da hidratação diária, com registro de consumo, metas, histórico, estatísticas e gamificação.
 
-Tecnologias
+# Tecnologias
 
 Backend
 
@@ -22,12 +22,12 @@ Mobile
 * Expo
 * JavaScript
 
-Estrutura do projeto
+# Estrutura do projeto
 
 * backend/: API e regras de negócio.
 * web/: aplicação Web.
 * mobile/: aplicativo Mobile.
 
-Status
+# Status
 
 Em desenvolvimento acadêmico individual.
