@@ -1,0 +1,15 @@
+*.py[cod]
+.venv/
+venv
+.env
+node_modules/
+dist/
+build/
+.expo/
+web-build/
+android/
+ios/
+*.log
+.vscode/
+.DS_Store
+Thumbs.db
