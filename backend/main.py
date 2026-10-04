@@ -1,10 +1,18 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from schemas import UsuarioCadastro, UsuarioLogin
 from mysql.connector import Error
 from database import conectar
-from seguranca import gerar_hash, verificar_senha
+from seguranca import gerar_hash, verificar_senha, criar_token, obter_usuario_id
 
 app = FastAPI(title="Hydrates API")
+
+bearer_scheme = HTTPBearer()
+
+def usuario_autenticado(
+        credenciais: HTTPAuthorizationCredentials = Depends(bearer_scheme)
+        ) -> int:
+    return obter_usuario_id(credenciais.credentials)
 
 @app.get("/")
 def inicio():
@@ -82,8 +90,13 @@ def login_usuario(dados: UsuarioLogin):
                 status_code=401,
                 detail="Email ou senha incorretos."
             )
+        token = criar_token({
+            "sub": str(usuario["id"])
+            })
         return {
             "mensagem": "Login realizado com sucesso!",
+            "access_token": token,
+            "token_type": "bearer",
             "id": usuario["id"],
             "nome": usuario["nome"],
             "email": usuario["email"]
