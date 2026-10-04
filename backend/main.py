@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException
-from schemas import UsuarioCadastro
+from schemas import UsuarioCadastro, UsuarioLogin
 from mysql.connector import Error
 from database import conectar
-from seguranca import gerar_hash
+from seguranca import gerar_hash, verificar_senha
 
 app = FastAPI(title="Hydrates API")
 
@@ -55,8 +55,54 @@ def criar_usuario(usuario: UsuarioCadastro):
             conexao.close()
     
 @app.post("/login")
-def login_usuario():
-    return {"mensagem": "Login realizado com sucesso!"}
+def login_usuario(dados: UsuarioLogin):
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = conectar()
+        cursor = conexao.cursor(dictionary=True)
+        sql = """
+            SELECT id, nome, email, senha_hash FROM usuario WHERE email = %s
+        """
+        cursor.execute(sql, (dados.email,))
+        usuario = cursor.fetchone()
+
+        if usuario is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Email ou senha incorretos."
+            )
+        senha_correta = verificar_senha(
+            dados.senha,
+            usuario["senha_hash"]
+        )
+        if not senha_correta:
+            raise HTTPException(
+                status_code=401,
+                detail="Email ou senha incorretos."
+            )
+        return {
+            "mensagem": "Login realizado com sucesso!",
+            "id": usuario["id"],
+            "nome": usuario["nome"],
+            "email": usuario["email"]
+        }
+    except HTTPException:
+        raise
+
+    except Error as erro:
+        print("ERRO MYSQL NO LOGIN:", erro)
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao realizar login."
+        )
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
 
 @app.post("/consumos")
 def registrar_consumo():

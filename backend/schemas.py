@@ -8,3 +8,7 @@ class UsuarioCadastro(BaseModel):
     senha: str = Field(min_length=8)
     idade: int = Field(gt=0, le=120)
     peso: float = Field(gt=0, le=500)
+
+class UsuarioLogin(BaseModel):
+    email: EmailStr
+    senha: str = Field(min_length=8)
