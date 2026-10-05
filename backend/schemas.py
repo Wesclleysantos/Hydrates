@@ -12,3 +12,7 @@ class UsuarioCadastro(BaseModel):
 class UsuarioLogin(BaseModel):
     email: EmailStr
     senha: str = Field(min_length=8)
+
+class ConsumoCriacao(BaseModel):
+    bebida_id: int = Field(gt=0)
+    quantidade_ml: int = Field(gt=0)

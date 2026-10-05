@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from schemas import UsuarioCadastro, UsuarioLogin
+from schemas import UsuarioCadastro, UsuarioLogin, ConsumoCriacao
 from mysql.connector import Error
 from database import conectar
 from seguranca import gerar_hash, verificar_senha, criar_token, obter_usuario_id
@@ -118,8 +118,73 @@ def login_usuario(dados: UsuarioLogin):
             conexao.close()
 
 @app.post("/consumos")
-def registrar_consumo():
-    return {"mensagem": "Consumo registrado com sucesso!"}  
+def registrar_consumo(
+    consumo: ConsumoCriacao,
+    usuario_id: int = Depends(usuario_autenticado)
+):
+    conexao = None
+    cursor = None
+    try:
+        conexao = conectar()
+        cursor = conexao.cursor(dictionary=True)
+        sql = """
+            SELECT id, nome, fator_hidratacao
+            FROM bebida
+            WHERE id = %s
+        """
+        cursor.execute(sql, (consumo.bebida_id,))
+        bebida = cursor.fetchone()
+
+        if bebida is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Bebida não encontrada."
+            )
+        hidratacao_ml = (
+            consumo.quantidade_ml * float(bebida["fator_hidratacao"])
+        )
+        sql = """
+            INSERT INTO consumo (
+            usuario_id, 
+            bebida_id, 
+            quantidade_ml, 
+            hidratacao_ml
+            )
+            VALUES (%s, %s, %s, %s)
+        """
+        valores = (
+            usuario_id,
+            consumo.bebida_id,
+            consumo.quantidade_ml,
+            hidratacao_ml
+        )
+        cursor.execute(sql, valores)
+        conexao.commit()
+        return {
+            "mensagem": "Consumo registrado com sucesso!",
+            "usuario_id": usuario_id,
+            "bebida": bebida["nome"],
+            "quantidade_ml": consumo.quantidade_ml,
+            "hidratacao_ml": hidratacao_ml
+        }
+    except HTTPException:
+        raise
+    except Error as erro:
+        print("ERRO MYSQL NO CONSUMO:", erro)
+
+        if conexao is not None:
+            conexao.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao registrar consumo."
+        )
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
 
 @app.get("/consumos")
 def listar_consumos(usuario_id: int = Depends(usuario_autenticado)):
