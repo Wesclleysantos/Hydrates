@@ -122,8 +122,11 @@ def registrar_consumo():
     return {"mensagem": "Consumo registrado com sucesso!"}  
 
 @app.get("/consumos")
-def listar_consumos():
-    return {"mensagem": "Lista de consumos."}
+def listar_consumos(usuario_id: int = Depends(usuario_autenticado)):
+    return {
+        "mensagem": "Lista de consumos.",
+        "usuario_id": usuario_id
+    }
 
 @app.get("/bebidas")
 def listar_bebidas():
