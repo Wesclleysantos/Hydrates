@@ -271,10 +271,69 @@ def criar_meta(
 
         if conexao is not None and conexao.is_connected():
             conexao.close()
-            
+
 @app.get("/metas")
-def listar_metas():
-    return {"mensagem": "Lista de metas."}
+def listar_metas(
+    usuario_id: int = Depends(usuario_autenticado)
+):
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = conectar()
+        cursor = conexao.cursor(dictionary=True)
+
+        sql_meta = """
+            SELECT meta_ml
+            FROM meta
+            WHERE usuario_id = %s
+            ORDER BY criada_em DESC
+            LIMIT 1
+        """
+        cursor.execute(sql_meta, (usuario_id,))
+        meta = cursor.fetchone()
+
+        if meta is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Nenhuma meta encontrada para o usuário."
+            )
+        sql_consumo = """
+            SELECT COALESCE(SUM(hidratacao_ml), 0) AS consumido_ml
+            FROM consumo
+            WHERE usuario_id = %s
+                AND DATE(consumido_em) = CURDATE()
+        """
+        cursor.execute(sql_consumo, (usuario_id,))
+        resultado = cursor.fetchone()
+        consumido_ml = float(resultado["consumido_ml"])
+        meta_ml = float(meta["meta_ml"])
+        restante_ml = max(meta_ml - consumido_ml, 0)
+        progresso = min(
+            (consumido_ml / meta_ml) * 100, 100
+        )
+        return {
+            "meta_ml": meta_ml,
+            "consumido_ml": consumido_ml,
+            "restante_ml": restante_ml,
+            "progresso": progresso
+        }
+    except HTTPException:
+        raise
+
+    except Error as erro:
+        print("ERRO MYSQL AO CONSULTAR META:", erro)
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao consultar meta."
+        )
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
+
 
 @app.get("/bebidas")
 def listar_bebidas():
