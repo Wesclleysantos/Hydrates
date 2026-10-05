@@ -188,10 +188,41 @@ def registrar_consumo(
 
 @app.get("/consumos")
 def listar_consumos(usuario_id: int = Depends(usuario_autenticado)):
-    return {
-        "mensagem": "Lista de consumos.",
-        "usuario_id": usuario_id
-    }
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = conectar()
+        cursor = conexao.cursor(dictionary=True)
+        sql = """
+            SELECT 
+                consumo.id,
+                bebida.nome AS bebida,
+                consumo.quantidade_ml,
+                consumo.hidratacao_ml,
+                consumo.consumido_em
+            FROM consumo
+            JOIN bebida
+                ON bebida.id = consumo.bebida_id
+            WHERE consumo.usuario_id = %s
+            ORDER BY consumo.consumido_em DESC
+        """
+        cursor.execute(sql, (usuario_id,))
+        consumos = cursor.fetchall()
+        return consumos
+
+    except Error as erro:
+        print("ERRO MYSQL AO LISTAR CONSUMOS:", erro)
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao buscar consumos."
+        )
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
 
 @app.get("/bebidas")
 def listar_bebidas():
