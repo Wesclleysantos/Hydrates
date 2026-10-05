@@ -160,6 +160,55 @@ def registrar_consumo(
         )
         cursor.execute(sql, valores)
         conexao.commit()
+        sql_conquista = """
+            SELECT id, pontos
+            FROM conquista
+            WHERE nome = 'Primeiro consumo'
+        """
+
+        cursor.execute(sql_conquista)
+        conquista = cursor.fetchone()
+
+        sql_verificar = """
+            SELECT 1
+            FROM usuario_conquista
+            WHERE usuario_id = %s
+              AND conquista_id = %s
+        """
+
+        cursor.execute(
+            sql_verificar,
+            (usuario_id, conquista["id"])
+        )
+
+        ja_conquistou = cursor.fetchone()
+
+        if ja_conquistou is None:
+            sql_usuario_conquista = """
+                INSERT INTO usuario_conquista (
+                    usuario_id,
+                    conquista_id
+                )
+                VALUES (%s, %s)
+            """
+
+            cursor.execute(
+                sql_usuario_conquista,
+                (usuario_id, conquista["id"])
+            )
+
+            sql_pontos = """
+                UPDATE usuario
+                SET pontos = pontos + %s
+                WHERE id = %s
+            """
+
+            cursor.execute(
+                sql_pontos,
+                (conquista["pontos"], usuario_id)
+            )
+
+            conexao.commit()
         return {
             "mensagem": "Consumo registrado com sucesso!",
             "usuario_id": usuario_id,
