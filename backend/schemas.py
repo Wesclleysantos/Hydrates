@@ -16,3 +16,7 @@ class UsuarioLogin(BaseModel):
 class ConsumoCriacao(BaseModel):
     bebida_id: int = Field(gt=0)
     quantidade_ml: int = Field(gt=0)
+
+class MetaCriacao(BaseModel):
+    meta_ml: int = Field(gt=0)
+    

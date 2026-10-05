@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from schemas import UsuarioCadastro, UsuarioLogin, ConsumoCriacao
+from schemas import UsuarioCadastro, UsuarioLogin, ConsumoCriacao, MetaCriacao
 from mysql.connector import Error
 from database import conectar
 from seguranca import gerar_hash, verificar_senha, criar_token, obter_usuario_id
@@ -224,14 +224,58 @@ def listar_consumos(usuario_id: int = Depends(usuario_autenticado)):
         if conexao is not None and conexao.is_connected():
             conexao.close()
 
-@app.get("/bebidas")
-def listar_bebidas():
-    return {"mensagem": "Lista de bebidas."}
-
 @app.post("/metas")
-def criar_meta():
-    return {"mensagem": "Meta criada com sucesso!"}
+def criar_meta(
+    dados: MetaCriacao,
+    usuario_id: int = Depends(usuario_autenticado)
+):
+    conexao = None
+    cursor = None
 
+    try:
+        conexao = conectar()
+        cursor = conexao.cursor()
+        sql = """
+            INSERT INTO meta (
+            usuario_id,
+            meta_ml
+            )
+            VALUES (%s, %s)
+        """
+        valores = (
+            usuario_id,
+            dados.meta_ml
+        )
+        cursor.execute(sql, valores)
+        conexao.commit()
+        return {
+            "mensagem": "Meta criada com sucesso!",
+            "usuario_id": usuario_id,
+            "meta_ml": dados.meta_ml
+        }
+
+    except Error as erro:
+        print("ERRO MYSQL AO CRIAR META:", erro)
+
+        if conexao is not None:
+            conexao.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao criar meta."
+        )
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
+            
 @app.get("/metas")
 def listar_metas():
     return {"mensagem": "Lista de metas."}
+
+@app.get("/bebidas")
+def listar_bebidas():
+    return {"mensagem": "Lista de bebidas."}
