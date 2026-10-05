@@ -337,4 +337,38 @@ def listar_metas(
 
 @app.get("/bebidas")
 def listar_bebidas():
-    return {"mensagem": "Lista de bebidas."}
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = conectar()
+        cursor = conexao.cursor(dictionary=True)
+
+        sql = """
+            SELECT
+                id,
+                nome,
+                fator_hidratacao
+            FROM bebida
+            ORDER BY id
+        """
+
+        cursor.execute(sql)
+        bebidas = cursor.fetchall()
+
+        return bebidas
+
+    except Error as erro:
+        print("ERRO MYSQL AO LISTAR BEBIDAS:", erro)
+
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao buscar bebidas."
+        )
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
