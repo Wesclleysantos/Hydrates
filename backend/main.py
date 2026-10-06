@@ -210,11 +210,11 @@ def registrar_consumo(
 
             conexao.commit()
 
-            sql_meta = """
+        sql_meta = """
             SELECT meta_ml
             FROM meta
             WHERE usuario_id = %s
-              AND ativa = TRUE
+                AND ativa = TRUE
             ORDER BY criada_em DESC
             LIMIT 1
         """
@@ -493,6 +493,54 @@ def listar_bebidas():
             detail="Erro ao buscar bebidas."
         )
 
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexao is not None and conexao.is_connected():
+            conexao.close()
+
+@app.get("/conquistas")
+def listar_conquista(
+    usuario_id: int = Depends(usuario_autenticado)
+):
+    conexao = None
+    cursor = None
+
+    try:
+        conexao = conectar()
+        cursor = conexao.cursor(dictionary=True)
+
+        sql = """
+            SELECT
+                c.id,
+                c.nome,
+                c.descricao,
+                c.pontos,
+                uc.conquistada_em
+            FROM conquista c
+            LEFT JOIN usuario_conquista uc
+                ON c.id = uc.conquista_id
+                AND uc.usuario_id = %s
+            ORDER BY c.id
+        """
+
+        cursor.execute(sql, (usuario_id,))
+        conquistas = cursor.fetchall()
+
+        for conquista in conquistas:
+            conquista["conquistada"] = (
+                conquista["conquistada_em"] is not None
+            )
+
+        return conquistas
+
+    except Error as erro:
+        print("ERRO MYSQL AO LISTAR CONQUISTAS:", erro)
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao buscar conquistas."
+        )
     finally:
         if cursor is not None:
             cursor.close()
