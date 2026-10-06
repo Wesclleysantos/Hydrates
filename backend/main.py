@@ -209,6 +209,84 @@ def registrar_consumo(
             )
 
             conexao.commit()
+
+            sql_meta = """
+            SELECT meta_ml
+            FROM meta
+            WHERE usuario_id = %s
+              AND ativa = TRUE
+            ORDER BY criada_em DESC
+            LIMIT 1
+        """
+
+        cursor.execute(sql_meta, (usuario_id,))
+        meta = cursor.fetchone()
+
+        if meta is not None:
+            sql_total = """
+                SELECT COALESCE(SUM(hidratacao_ml), 0) AS total_ml
+                FROM consumo
+                WHERE usuario_id = %s
+                  AND DATE(consumido_em) = CURDATE()
+            """
+
+            cursor.execute(sql_total, (usuario_id,))
+            resultado = cursor.fetchone()
+
+            total_ml = float(resultado["total_ml"])
+
+            if total_ml >= float(meta["meta_ml"]):
+
+                sql_conquista = """
+                    SELECT id, pontos
+                    FROM conquista
+                    WHERE nome = 'Meta atingida'
+                """
+
+                cursor.execute(sql_conquista)
+                conquista_meta = cursor.fetchone()
+
+                sql_verificar = """
+                    SELECT 1
+                    FROM usuario_conquista
+                    WHERE usuario_id = %s
+                    AND conquista_id = %s
+                """
+
+                cursor.execute(
+                    sql_verificar,
+                    (usuario_id, conquista_meta["id"])
+                )
+
+                ja_conquistou = cursor.fetchone()
+
+            if ja_conquistou is None:
+                sql_usuario_conquista = """
+                    INSERT INTO usuario_conquista (
+                        usuario_id,
+                        conquista_id
+                    )
+                        VALUES (%s, %s)
+                """
+
+                cursor.execute(
+                    sql_usuario_conquista,
+                    (usuario_id, conquista_meta["id"])
+                )
+
+                sql_pontos = """
+                    UPDATE usuario
+                    SET pontos = pontos + %s
+                    WHERE id = %s
+                """
+
+                cursor.execute(
+                    sql_pontos,
+                    (conquista_meta["pontos"], usuario_id)
+                )
+
+                conexao.commit()
+
         return {
             "mensagem": "Consumo registrado com sucesso!",
             "usuario_id": usuario_id,
