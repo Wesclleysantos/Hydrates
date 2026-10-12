@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS conquistas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL UNIQUE,
+    descricao VARCHAR(255) NOT NULL,
+    pontos INT NOT NULL DEFAULT 0,
+    criterio VARCHAR(50) NOT NULL UNIQUE,
+    ativa BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_conquista_pontos
+        CHECK (pontos >= 0)
+);
