@@ -67,3 +67,26 @@ def buscar_por_nome(nome: str):
     finally:
         cursor.close()
         connection.close()
+
+def buscar_por_id(bebida_id: int):
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT id, nome, fator_hidratacao, activo
+            FROM bebidas
+            WHERE id = %s
+            LIMIT 1
+            """,
+            (bebida_id,),
+        )
+
+        return cursor.fetchone()
+
+    finally:
+        cursor.close()
+        connection.close()
+        
