@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from app.configuracoes import controller
+from app.dependencies import obter_usuario_atual
 
 router = APIRouter(
     prefix="/configuracoes",
@@ -13,16 +14,18 @@ class ConfiguracoesEntrada(BaseModel):
     horario_inicio: str | None = None
     horario_fim: str | None = None
 
-@router.get("/{usuario_id}")
-def consultar_configuracoes(usuario_id: int):
+@router.get("")
+def consultar_configuracoes(
+    usuario_id: int = Depends(obter_usuario_atual),
+):
     return controller.consultar_configuracoes(
         usuario_id=usuario_id,
     )
 
-@router.put("/{usuario_id}")
+@router.put("")
 def atualizar_configuracoes(
-    usuario_id: int,
     dados: ConfiguracoesEntrada,
+    usuario_id: int = Depends(obter_usuario_atual),
 ):
     try:
         return controller.atualizar_configuracoes(
@@ -32,7 +35,6 @@ def atualizar_configuracoes(
             horario_inicio=dados.horario_inicio,
             horario_fim=dados.horario_fim,
         )
-
     except ValueError as erro:
         raise HTTPException(
             status_code=400,
