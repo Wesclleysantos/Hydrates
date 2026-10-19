@@ -30,6 +30,12 @@ def desbloquear_conquista(
             conquista_id=conquista_id,
         )
 
+        if conquista is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Esta conquista já foi desbloqueada.",
+            )
+
         return {
             "mensagem": "Conquista desbloqueada com sucesso.",
             "id": conquista,

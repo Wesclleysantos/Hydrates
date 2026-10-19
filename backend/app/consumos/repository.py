@@ -70,3 +70,27 @@ def listar_consumos(usuario_id: int):
     finally:
         cursor.close()
         connection.close()
+
+def usuario_tem_consumo(usuario_id: int) -> bool:
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM consumos
+                WHERE usuario_id = %s
+            )
+            """,
+            (usuario_id,),
+        )
+
+        resultado = cursor.fetchone()
+        return bool(resultado[0])
+
+    finally:
+        cursor.close()
+        connection.close()

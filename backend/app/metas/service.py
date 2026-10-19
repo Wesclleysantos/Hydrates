@@ -1,4 +1,5 @@
 from app.metas import repository
+from datetime import date, timedelta
 
 def definir_meta(usuario_id: int, quantidade_ml: int):
     if quantidade_ml <= 0:
@@ -34,4 +35,36 @@ def consultar_progresso(usuario_id: int):
         "restante_ml": round(restante_ml, 2),
         "progresso_percentual": progresso_percentual,
         "meta_atingida": consumido_ml >= meta_ml,
+    }
+
+
+def verificar_sequencia(usuario_id: int) -> dict:
+    dias_atingidos = repository.listar_dias_com_meta_atingida(
+        usuario_id
+    )
+
+    datas = {
+        dia["data_meta"]
+        for dia in dias_atingidos
+    }
+
+    hoje = date.today()
+
+    # Se hoje ainda não foi concluído, começa a contar de ontem.
+    inicio = 0 if hoje in datas else 1
+
+    sequencia = 0
+
+    for i in range(inicio, inicio + 7):
+        dia_verificado = hoje - timedelta(days=i)
+
+        if dia_verificado in datas:
+            sequencia += 1
+        else:
+            break
+
+    return {
+        "sequencia_atual": sequencia,
+        "meta_3_dias": sequencia >= 3,
+        "meta_7_dias": sequencia >= 7,
     }

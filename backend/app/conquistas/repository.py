@@ -61,24 +61,38 @@ def desbloquear_conquista(usuario_id: int, conquista_id: int):
 
     try:
         cursor = connection.cursor()
+
         cursor.execute(
             """
-            INSERT INTO usuario_conquistas (
-                usuario_id,
-                conquista_id
-            )
-            SELECT %s, id
+            SELECT id
             FROM conquistas
             WHERE id = %s
               AND ativa = TRUE
             """,
+            (conquista_id,),
+        )
+
+        conquista = cursor.fetchone()
+
+        if not conquista:
+            raise ValueError("Conquista não encontrada ou inativa.")
+
+        cursor.execute(
+            """
+            INSERT IGNORE INTO usuario_conquistas (
+                usuario_id,
+                conquista_id
+            )
+            VALUES (%s, %s)
+            """,
             (usuario_id, conquista_id),
         )
 
-        if cursor.rowcount == 0:
-            raise ValueError("Conquista não encontrada ou inativa.")
-
         connection.commit()
+
+        if cursor.rowcount == 0:
+            return None
+
         return cursor.lastrowid
 
     except Exception:

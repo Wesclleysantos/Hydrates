@@ -1,6 +1,6 @@
 from app.consumos import repository
 from app.bebidas import repository as bebidas_repository
-
+from app.conquistas import service as conquistas_service
 
 def registrar_consumo(
     usuario_id: int,
@@ -22,11 +22,22 @@ def registrar_consumo(
     hidratacao_ml = round(quantidade_ml * fator, 2)
 
     consumo_id = repository.criar_consumo(
-        usuario_id = usuario_id,
-        bebida_id = bebida_id,
-        quantidade_ml = quantidade_ml,
-        hidratacao_ml = hidratacao_ml,
+        usuario_id=usuario_id,
+        bebida_id=bebida_id,
+        quantidade_ml=quantidade_ml,
+        hidratacao_ml=hidratacao_ml,
     )
+
+    conquistas_desbloqueadas = []
+
+    try:
+        conquistas_desbloqueadas = conquistas_service.verificar_conquistas(
+            usuario_id
+        )
+    except Exception:
+        # O consumo já foi salvo; uma falha nas conquistas
+        # não deve impedir sua confirmação.
+        pass
 
     return {
         "id": consumo_id,
@@ -35,8 +46,8 @@ def registrar_consumo(
         "bebida": bebida["nome"],
         "quantidade_ml": quantidade_ml,
         "hidratacao_ml": hidratacao_ml,
+        "conquistas_desbloqueadas": conquistas_desbloqueadas,
     }
-
 
 def listar_consumos(usuario_id: int):
     return repository.listar_consumos(usuario_id)

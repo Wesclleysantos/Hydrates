@@ -98,3 +98,40 @@ def calcular_consumo_do_dia(usuario_id: int):
     finally:
         cursor.close()
         connection.close()
+
+def listar_dias_com_meta_atingida(usuario_id: int):
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT
+                m.data_meta,
+                m.quantidade_ml AS meta_ml,
+                COALESCE(SUM(c.hidratacao_ml), 0) AS consumido_ml
+            FROM metas m
+            LEFT JOIN consumos c
+                ON c.usuario_id = m.usuario_id
+                AND c.consumido_em >= m.data_meta
+                AND c.consumido_em < DATE_ADD(
+                    m.data_meta,
+                    INTERVAL 1 DAY
+                )
+            WHERE m.usuario_id = %s
+            GROUP BY
+                m.id,
+                m.data_meta,
+                m.quantidade_ml
+            HAVING consumido_ml >= meta_ml
+            ORDER BY m.data_meta DESC
+            """,
+            (usuario_id,),
+        )
+
+        return cursor.fetchall()
+
+    finally:
+        cursor.close()
+        connection.close()
