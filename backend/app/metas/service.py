@@ -1,6 +1,9 @@
 from app.metas import repository
 from datetime import date, timedelta
 
+ML_POR_KG_PARA_META_ESTIMADA = 35
+IDADE_MINIMA_META_AUTOMATICA = 18
+
 def definir_meta(usuario_id: int, quantidade_ml: int):
     if quantidade_ml <= 0:
         raise ValueError("A meta deve ser maior que zero.")
@@ -9,6 +12,36 @@ def definir_meta(usuario_id: int, quantidade_ml: int):
         usuario_id=usuario_id,
         quantidade_ml=quantidade_ml,
     )
+
+def calcular_meta_automatica(usuario_id: int):
+    usuario = repository.buscar_dados_usuario(usuario_id)
+
+    if not usuario:
+        raise ValueError("Usuário não encontrado.")
+
+    idade = usuario["idade"]
+    peso = usuario["peso"]
+
+    if idade is None or idade < IDADE_MINIMA_META_AUTOMATICA:
+        raise ValueError(
+            "O cálculo automático está disponível apenas para adultos. "
+            "Defina a meta manualmente."
+        )
+
+    if peso is None or float(peso) <= 0:
+        raise ValueError(
+            "Cadastre um peso válido para calcular a meta automaticamente."
+        )
+
+    quantidade_ml = round(float(peso) * ML_POR_KG_PARA_META_ESTIMADA)
+    meta = repository.definir_meta_do_dia(usuario_id, quantidade_ml)
+
+    return {
+        **meta,
+        "calculada_automaticamente": True,
+        "criterio": f"estimativa geral de {ML_POR_KG_PARA_META_ESTIMADA} ml por kg de peso para adultos",
+        "aviso": "Estimativa geral; necessidades individuais podem variar. Você pode ajustar a meta manualmente.",
+    }
 
 def consultar_progresso(usuario_id: int):
     meta = repository.buscar_meta_do_dia(usuario_id)
@@ -37,7 +70,6 @@ def consultar_progresso(usuario_id: int):
         "meta_atingida": consumido_ml >= meta_ml,
     }
 
-
 def verificar_sequencia(usuario_id: int) -> dict:
     dias_atingidos = repository.listar_dias_com_meta_atingida(
         usuario_id
@@ -49,10 +81,7 @@ def verificar_sequencia(usuario_id: int) -> dict:
     }
 
     hoje = date.today()
-
-    # Se hoje ainda não foi concluído, começa a contar de ontem.
     inicio = 0 if hoje in datas else 1
-
     sequencia = 0
 
     for i in range(inicio, inicio + 7):

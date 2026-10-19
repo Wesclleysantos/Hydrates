@@ -27,6 +27,18 @@ def definir_meta(
             detail=str(erro),
         )
 
+@router.post("/calcular")
+def calcular_meta_automatica(
+    usuario_id: int = Depends(obter_usuario_atual),
+):
+    try:
+        return controller.calcular_meta_automatica(usuario_id)
+    except ValueError as erro:
+        raise HTTPException(
+            status_code=400,
+            detail=str(erro),
+        )
+
 @router.get("/progresso")
 def consultar_progresso(
     usuario_id: int = Depends(obter_usuario_atual),

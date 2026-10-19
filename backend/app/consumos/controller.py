@@ -1,6 +1,6 @@
+from datetime import date
 from fastapi import HTTPException, status
 from app.consumos import service
-
 
 def registrar_consumo(
     usuario_id: int,
@@ -13,13 +13,18 @@ def registrar_consumo(
             bebida_id=bebida_id,
             quantidade_ml=quantidade_ml,
         )
-
     except ValueError as erro:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(erro),
-        )
-
+        ) from erro
 
 def listar_consumos(usuario_id: int):
     return service.listar_consumos(usuario_id)
+
+def resumir_consumos(
+    usuario_id: int,
+    data_inicio: date | None = None,
+    data_fim: date | None = None,
+):
+    return service.resumir_consumos(usuario_id, data_inicio, data_fim)

@@ -18,9 +18,7 @@ class ConfiguracoesEntrada(BaseModel):
 def consultar_configuracoes(
     usuario_id: int = Depends(obter_usuario_atual),
 ):
-    return controller.consultar_configuracoes(
-        usuario_id=usuario_id,
-    )
+    return controller.consultar_configuracoes(usuario_id=usuario_id)
 
 @router.put("")
 def atualizar_configuracoes(
@@ -36,7 +34,10 @@ def atualizar_configuracoes(
             horario_fim=dados.horario_fim,
         )
     except ValueError as erro:
-        raise HTTPException(
-            status_code=400,
-            detail=str(erro),
-        )
+        raise HTTPException(status_code=400, detail=str(erro)) from erro
+
+@router.get("/lembretes/agenda")
+def consultar_agenda_lembretes(
+    usuario_id: int = Depends(obter_usuario_atual),
+):
+    return controller.consultar_agenda_lembretes(usuario_id)

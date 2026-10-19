@@ -1,9 +1,7 @@
 from app.configuracoes import service
 
 def consultar_configuracoes(usuario_id: int):
-    return service.consultar_configuracoes(
-        usuario_id=usuario_id,
-    )
+    return service.consultar_configuracoes(usuario_id=usuario_id)
 
 def atualizar_configuracoes(
     usuario_id: int,
@@ -19,3 +17,6 @@ def atualizar_configuracoes(
         horario_inicio=horario_inicio,
         horario_fim=horario_fim,
     )
+
+def consultar_agenda_lembretes(usuario_id: int):
+    return service.consultar_agenda_lembretes(usuario_id)

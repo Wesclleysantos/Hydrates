@@ -38,8 +38,8 @@ def login_usuario(email: str, senha: str):
     if usuario is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            details="E-mail ou senha incorretos.",
-            headres={"WWW-Authenticate": "Bearer"},
+            detail="E-mail ou senha incorretos.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     token = criar_token_acesso(usuario["id"])

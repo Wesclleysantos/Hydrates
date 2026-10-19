@@ -1,5 +1,19 @@
 from app.database import get_connection
 
+def buscar_dados_usuario(usuario_id: int):
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT peso, idade FROM usuarios WHERE id = %s LIMIT 1",
+            (usuario_id,),
+        )
+        return cursor.fetchone()
+    finally:
+        cursor.close()
+        connection.close()
+
 def buscar_meta_do_dia(usuario_id: int):
     connection = get_connection()
 
@@ -135,3 +149,4 @@ def listar_dias_com_meta_atingida(usuario_id: int):
     finally:
         cursor.close()
         connection.close()
+        
