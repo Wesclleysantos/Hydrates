@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from app.metas import controller
+from app.dependencies import obter_usuario_atual
 
 router = APIRouter(
     prefix="/metas",
@@ -10,8 +11,11 @@ router = APIRouter(
 class MetaEntrada(BaseModel):
     quantidade_ml: int = Field(gt=0)
 
-@router.put("/{usuario_id}")
-def definir_meta(usuario_id: int, dados: MetaEntrada):
+@router.put("")
+def definir_meta(
+    dados: MetaEntrada,
+    usuario_id: int = Depends(obter_usuario_atual),
+):
     try:
         return controller.definir_meta(
             usuario_id=usuario_id,
@@ -23,8 +27,10 @@ def definir_meta(usuario_id: int, dados: MetaEntrada):
             detail=str(erro),
         )
 
-@router.get("/{usuario_id}/progresso")
-def consultar_progresso(usuario_id: int):
+@router.get("/progresso")
+def consultar_progresso(
+    usuario_id: int = Depends(obter_usuario_atual),
+):
     return controller.consultar_progresso(
         usuario_id=usuario_id,
     )
