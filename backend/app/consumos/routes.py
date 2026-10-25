@@ -41,4 +41,22 @@ def resumir_consumos(
         )
     except ValueError as erro:
         raise HTTPException(status_code=400, detail=str(erro))
-    
+
+@router.get("/resumo/bebidas/diario")
+def resumir_consumos_diario_por_bebida(
+    bebida_id: int = Query(gt=0),
+    data_inicio: date | None = Query(default=None),
+    data_fim: date | None = Query(default=None),
+    usuario_id: int = Depends(obter_usuario_atual),
+):
+    try:
+        return controller.resumir_consumos_diario_por_bebida(
+            usuario_id=usuario_id,
+            bebida_id=bebida_id,
+            data_inicio=data_inicio,
+            data_fim=data_fim,
+        )
+    except LookupError as erro:
+        raise HTTPException(status_code=404, detail=str(erro))
+    except ValueError as erro:
+        raise HTTPException(status_code=400, detail=str(erro))

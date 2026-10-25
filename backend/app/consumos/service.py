@@ -13,7 +13,10 @@ def registrar_consumo(
     if quantidade_ml <= 0:
         raise ValueError("A quantidade deve ser maior que zero.")
 
-    bebida = bebidas_repository.buscar_por_id(bebida_id)
+    bebida = bebidas_repository.buscar_por_id(
+            bebida_id=bebida_id,
+            usuario_id=usuario_id,
+        )
 
     if not bebida:
         raise ValueError("Bebida não encontrada.")
@@ -57,6 +60,19 @@ def resumir_consumos(
     data_inicio: date | None = None,
     data_fim: date | None = None,
 ):
+    return resumir_consumos_diario_por_bebida(
+        usuario_id=usuario_id,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+    )
+
+
+def resumir_consumos_diario_por_bebida(
+    usuario_id: int,
+    data_inicio: date | None = None,
+    data_fim: date | None = None,
+    bebida_id: int | None = None,
+):
     if data_inicio is None and data_fim is None:
         data_fim = date.today()
         data_inicio = data_fim - timedelta(days=29)
@@ -70,31 +86,96 @@ def resumir_consumos(
     if quantidade_dias > PERIODO_MAXIMO_RESUMO_DIAS:
         raise ValueError("O período do resumo não pode exceder 366 dias.")
 
-    registros = repository.resumir_consumos(usuario_id, data_inicio, data_fim)
-    por_data = {registro["data_consumo"]: registro for registro in registros}
-    dias = []
+    bebida_selecionada = None
+    if bebida_id is not None:
+        bebida_selecionada = bebidas_repository.buscar_por_id(
+            bebida_id=bebida_id,
+            usuario_id=usuario_id,
+        )
+        if not bebida_selecionada:
+            raise LookupError("Bebida não encontrada para este usuário.")
+
+    registros = repository.resumir_consumos_diario_por_bebida(
+        usuario_id=usuario_id,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        bebida_id=bebida_id,
+    )
+
+    datas = [
+        data_inicio + timedelta(days=deslocamento)
+        for deslocamento in range(quantidade_dias)
+    ]
+    dados_por_bebida = {}
+
+    if bebida_selecionada:
+        dados_por_bebida[bebida_id] = {
+            "bebida_id": bebida_id,
+            "bebida": bebida_selecionada["nome"],
+            "por_data": {},
+        }
+
+    for registro in registros:
+        bebida_registro_id = int(registro["bebida_id"])
+        if bebida_registro_id not in dados_por_bebida:
+            dados_por_bebida[bebida_registro_id] = {
+                "bebida_id": bebida_registro_id,
+                "bebida": registro["bebida"],
+                "por_data": {},
+            }
+
+        dados_por_bebida[bebida_registro_id]["por_data"][
+            registro["data_consumo"]
+        ] = registro
+
+    bebidas = []
     total_quantidade_ml = 0.0
     total_hidratacao_ml = 0.0
+    total_registros = 0
 
-    for deslocamento in range(quantidade_dias):
-        dia = data_inicio + timedelta(days=deslocamento)
-        registro = por_data.get(dia, {})
-        quantidade_ml = float(registro.get("quantidade_ml", 0) or 0)
-        hidratacao_ml = float(registro.get("hidratacao_ml", 0) or 0)
-        total_quantidade_ml += quantidade_ml
-        total_hidratacao_ml += hidratacao_ml
-        dias.append({
-            "data": dia.isoformat(),
-            "quantidade_ml": round(quantidade_ml, 2),
-            "hidratacao_ml": round(hidratacao_ml, 2),
-            "registros": int(registro.get("registros", 0) or 0),
+    for dados_bebida in dados_por_bebida.values():
+        dias = []
+        quantidade_total_bebida = 0.0
+        hidratacao_total_bebida = 0.0
+        registros_total_bebida = 0
+
+        for dia in datas:
+            registro = dados_bebida["por_data"].get(dia, {})
+            quantidade_ml = float(registro.get("quantidade_ml", 0) or 0)
+            hidratacao_ml = float(registro.get("hidratacao_ml", 0) or 0)
+            quantidade_registros = int(registro.get("registros", 0) or 0)
+
+            quantidade_total_bebida += quantidade_ml
+            hidratacao_total_bebida += hidratacao_ml
+            registros_total_bebida += quantidade_registros
+
+            dias.append({
+                "data": dia.isoformat(),
+                "quantidade_ml": round(quantidade_ml, 2),
+                "hidratacao_ml": round(hidratacao_ml, 2),
+                "registros": quantidade_registros,
+            })
+
+        total_quantidade_ml += quantidade_total_bebida
+        total_hidratacao_ml += hidratacao_total_bebida
+        total_registros += registros_total_bebida
+
+        bebidas.append({
+            "bebida_id": dados_bebida["bebida_id"],
+            "bebida": dados_bebida["bebida"],
+            "dias": dias,
+            "total_quantidade_ml": round(quantidade_total_bebida, 2),
+            "total_hidratacao_ml": round(hidratacao_total_bebida, 2),
+            "total_registros": registros_total_bebida,
         })
 
     return {
         "usuario_id": usuario_id,
         "data_inicio": data_inicio.isoformat(),
         "data_fim": data_fim.isoformat(),
-        "dias": dias,
+        "datas": [dia.isoformat() for dia in datas],
+        "bebidas": bebidas,
         "total_quantidade_ml": round(total_quantidade_ml, 2),
         "total_hidratacao_ml": round(total_hidratacao_ml, 2),
+        "total_registros": total_registros,
     }

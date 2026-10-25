@@ -28,3 +28,16 @@ def resumir_consumos(
     data_fim: date | None = None,
 ):
     return service.resumir_consumos(usuario_id, data_inicio, data_fim)
+
+def resumir_consumos_diario_por_bebida(
+    usuario_id: int,
+    bebida_id: int,
+    data_inicio: date | None = None,
+    data_fim: date | None = None,
+):
+    return service.resumir_consumos_diario_por_bebida(
+        usuario_id=usuario_id,
+        bebida_id=bebida_id,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+    )

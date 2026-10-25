@@ -1,24 +1,39 @@
 from app.bebidas import service
 from fastapi import HTTPException, status
 
-def listar_bebidas():
-    return service.listar_bebidas()
+def listar_bebidas(usuario_id: int):
+    return service.listar_bebidas(usuario_id=usuario_id)
 
-def cadastrar_bebida(nome: str, fator_hidratacao: float):
-    try:
-        bebida_id = service.cadastrar_bebida(
-            nome = nome,
-            fator_hidratacao = fator_hidratacao,
-        )
+def cadastrar_bebida(
+    usuario_id: int,
+    nome: str,
+    fator_hidratacao: float,
+):
+    bebida_id = service.cadastrar_bebida(
+        usuario_id=usuario_id,
+        nome=nome,
+        fator_hidratacao=fator_hidratacao,
+    )
 
-        return {
-            "mensagem": "Bebida cadastrada com sucesso.",
-            "id": bebida_id,
-        }
+    return {
+        "mensagem": "Bebida cadastrada com sucesso.",
+        "id": bebida_id,
+    }
 
-    except ValueError as erro:
-        raise HTTPException(
-            status_code = status.HTTP_400_BAD_REQUEST,
-            detail = str(erro),
-        )
-    
+def atualizar_bebida(
+    usuario_id: int,
+    bebida_id: int,
+    nome: str,
+    fator_hidratacao: float,
+):
+    service.atualizar_bebida(
+        usuario_id=usuario_id,
+        bebida_id=bebida_id,
+        nome=nome,
+        fator_hidratacao=fator_hidratacao,
+    )
+
+    return {
+        "mensagem": "Bebida atualizada com sucesso.",
+        "id": bebida_id,
+    }
